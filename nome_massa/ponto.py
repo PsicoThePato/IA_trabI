@@ -35,7 +35,7 @@ sse_total = 0
 for _ in range(populacao):
     state = generalFuncs.random_state(iris_df, k)
     estados.append(state.copy())
-    
+
     list_by_group = [*state.groupby('C-grupo')]
     sse = generalFuncs.sse_estado(list_by_group)
     sse_total += sse
@@ -45,5 +45,9 @@ sse_list = (1 - sse_list/sse_total)/(populacao - 1)
 choice = np.random.choice(range(populacao), 2, p=sse_list, replace=False)
 pai1 = estados[choice[0]]
 pai2 = estados[choice[1]]
-pai1[145:] = pai2[145:]
-
+novo_estado = pai1.copy()
+novo_estado[145:] = pai2[145:]
+m = 0.1
+m_lines = np.random.choice(
+    novo_estado.index, int(len(novo_estado)*m), replace=False)
+new_groups = np.random.choice(range(k), len(m_lines))
