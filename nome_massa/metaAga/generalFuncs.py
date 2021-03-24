@@ -20,5 +20,4 @@ def sse_estado(listGroups: List[Tuple[int, pd.DataFrame]]):
         centroid = (df.iloc[:, 0:-1].sum(axis=0))/len(df)
         sse += ((df.iloc[:, 0:-1] - centroid) ** 2).sum(axis=1).sum(axis=0)
         df['centroide'] = centroid
-    print(sse)
     return sse
