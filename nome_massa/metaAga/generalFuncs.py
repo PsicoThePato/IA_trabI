@@ -17,9 +17,10 @@ def random_state(dataset: pd.DataFrame, k: int) -> pd.DataFrame:
 def sse_estado(listGroups: List[Tuple[int, pd.DataFrame]]):
     sse = 0
     for _, df in listGroups:
+        #print(df)
         centroid = (df.iloc[:, 0:-1].sum(axis=0))/len(df)
         sse += ((df.iloc[:, 0:-1] - centroid) ** 2).sum(axis=1).sum(axis=0)
-        df['centroide'] = centroid
+        #df['centroide'] = centroid
     return sse
 
 

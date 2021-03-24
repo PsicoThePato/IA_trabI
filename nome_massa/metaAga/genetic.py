@@ -90,7 +90,7 @@ def run_ag(populacao, iris_df, k, cross_ratio, m):
 
 if __name__ == "__main__":
     populacao = 10
-    k = 5
+    k = 10
     cross_ratio = 0.8
     m = 0.1
     iris = load_iris()
