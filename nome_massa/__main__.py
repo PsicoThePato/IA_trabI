@@ -18,8 +18,6 @@ class Ponto:
 
 
 def calcula_euclidiana(linha: pd.Series, centroid: np.array):
-    # print(linha)
-    # print(centroid)
     return (linha - centroid)**2
 
 
@@ -38,11 +36,10 @@ if __name__ == '__main__':
     for _ in range(populacao):
         state = generalFuncs.random_state(iris_df, k)
         estados.append(state.copy())
+        sse_total, sse_list = generalFuncs.append_sse(
+            sse_total, state, sse_list
+            )
 
-        list_by_group = [*state.groupby('C-grupo')]
-        sse = generalFuncs.sse_estado(list_by_group)
-        sse_total += sse
-        sse_list = np.append(sse_list, sse)
     print(sse_list)
     sse_list = (1 - sse_list/sse_total)/(populacao - 1)
     print(sse_list)

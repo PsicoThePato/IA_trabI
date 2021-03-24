@@ -21,3 +21,10 @@ def sse_estado(listGroups: List[Tuple[int, pd.DataFrame]]):
         sse += ((df.iloc[:, 0:-1] - centroid) ** 2).sum(axis=1).sum(axis=0)
         df['centroide'] = centroid
     return sse
+
+
+def append_sse(sse_total, estado, sse_list_return):
+    list_by_group = [*estado.groupby('C-grupo')]
+    sse = sse_estado(list_by_group)
+    sse_total += sse
+    return sse_total, np.append(sse_list_return, sse)
