@@ -1,8 +1,9 @@
 import numpy as np
 from typing import List
-import copy
+import pandas as pd
+from sklearn.datasets import load_iris
 
-from metaAga import generalFuncs
+import generalFuncs
 
 
 def sexo(estados, populacao, cross_ratio, sse_teste):
@@ -33,16 +34,14 @@ def pega_nova_geracao(
     sse_list_return = np.array([])
     sse_total = 0
     for _ in range(int(populacao/2)):
-        novo_estado_paiD, novo_estado_maeD= sexo(estados, populacao, cross_ratio, sse_teste)
+        novo_estado_paiD, novo_estado_maeD = sexo(estados, populacao, cross_ratio, sse_teste)
         if(np.random.rand() < mutation_ratio):
-            # m_lines = np.random.choice(
-            #     novo_estado_paiD.index, int(len(novo_estado_paiD) * mutation_ratio),
-            #     replace=False
-            # )
             mutated_linha = np.random.choice(len(novo_estado_paiD))
             novo_estado_paiD.loc[[mutated_linha], ['C-grupo']] = np.random.choice(k)
-            # new_groups = np.random.choice(range(k), len(m_lines))
-            # novo_estado_paiD.loc[m_lines, "C-grupo"] = new_groups
+        if(np.random.rand() < mutation_ratio):
+            mutated_linha = np.random.choice(len(novo_estado_maeD))
+            novo_estado_maeD.loc[[mutated_linha], ['C-grupo']] = np.random.choice(k)
+                
         nova_geracao.append(novo_estado_paiD.copy())
         nova_geracao.append(novo_estado_maeD.copy())
 
@@ -55,3 +54,45 @@ def pega_nova_geracao(
             )
 
     return nova_geracao, sse_total, sse_list_return
+
+
+
+# m_lines = np.random.choice(
+#     novo_estado_paiD.index, int(len(novo_estado_paiD) * mutation_ratio),
+#     replace=False
+# )
+# new_groups = np.random.choice(range(k), len(m_lines))
+# novo_estado_paiD.loc[m_lines, "C-grupo"] = new_groups
+
+
+def run_ag(populacao, iris_df, k, cross_ratio, m):
+    estados = []
+    sse_list = np.array([])
+    sse_total = 0
+    for _ in range(populacao):
+        state = generalFuncs.random_state(iris_df, k)
+        estados.append(state.copy())
+        sse_total, sse_list = generalFuncs.append_sse(
+            sse_total, state, sse_list
+            )
+
+    print(sse_list)
+    sse_list = (1 - sse_list/sse_total)/(populacao - 1)
+    print(sse_list)
+    for _ in range(20):
+        nova_gen, sse_total, sse_list = pega_nova_geracao(
+            populacao, sse_total, sse_list,
+            cross_ratio, k, estados, m
+            )
+        print(f"Mais fittado: {sse_list.min()}")
+        sse_list = (1 - sse_list/sse_total)/(populacao - 1)
+
+
+if __name__ == "__main__":
+    populacao = 10
+    k = 5
+    cross_ratio = 0.8
+    m = 0.1
+    iris = load_iris()
+    iris_df = (pd.DataFrame(data=iris.data, columns=iris.feature_names))
+    run_ag(populacao, iris_df, k, cross_ratio, m)
