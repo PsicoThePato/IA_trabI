@@ -6,8 +6,6 @@ from sklearn.datasets import load_iris
 
 from metaAga import generalFuncs, genetic
 
-
-
 class Ponto:
     def __init__(self, components, identif):
         self.components = components
@@ -25,7 +23,7 @@ if __name__ == '__main__':
 
     populacao = 10
     k = 5
-    cross_ratio = 0.75
+    cross_ratio = 0.8
     m = 1.0
     iris = load_iris()
     iris_df = (pd.DataFrame(data=iris.data, columns=iris.feature_names))
@@ -43,7 +41,8 @@ if __name__ == '__main__':
     print(sse_list)
     sse_list = (1 - sse_list/sse_total)/(populacao - 1)
     print(sse_list)
-    for _ in range(50):
+    fittados = []
+    for _ in range(200):
         nova_gen, sse_total, sse_list = genetic.pega_nova_geracao(
             populacao, sse_total, sse_list,
             cross_ratio, k, estados, m
