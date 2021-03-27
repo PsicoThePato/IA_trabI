@@ -2,6 +2,8 @@ from typing import List, Tuple
 
 import numpy as np
 import pandas as pd
+from scipy.spatial import distance_matrix
+import matplotlib.pyplot as plt
 
 
 def random_state(dataset: pd.DataFrame, k: int) -> pd.DataFrame:
@@ -49,16 +51,69 @@ def pior_grupo(listGroups):
     return pior_grp
 
 
+def faz_matriz_distancias(dataset):
+    dist_m = pd.DataFrame(distance_matrix(dataset.values, dataset.values), index=dataset.index, columns=dataset.index)
+    return dist_m
+
+
+def cij_calc(linha, centroid_dict, wi):
+    dj = linha.loc[centroid_dict.keys()].min()
+    cij = linha.iloc[wi]
+    #print("#####")
+    #print(dj)
+    #print(cij)
+    #print("#####")
+    return max(dj - cij, 0)
+
+
 if __name__ == "__main__":
     from sklearn.datasets import load_iris
     iris = load_iris()
     iris_df = (pd.DataFrame(data=iris.data, columns=iris.feature_names))
-    estado = random_state(iris_df, 5)
-    pior_grp = pior_grupo([*estado.copy().groupby('C-grupo')])
-    print(pior_grp)
-    #print(estado.loc[estado['C-grupo'] == pior_grp])
-    #breakpoint()
-    pior_ponto = calcula_pior_ponto(estado.loc[estado['C-grupo'] == pior_grp])
-    print(estado)
+    # estado = random_state(iris_df, 5)
+    # pior_grp = pior_grupo([*estado.copy().groupby('C-grupo')])
+    # print(pior_grp)
+    # #print(estado.loc[estado['C-grupo'] == pior_grp])
+    # pior_ponto = calcula_pior_ponto(estado.loc[estado['C-grupo'] == pior_grp])
+    # print(estado)
+    # print(estado[pior_ponto])
+    k = 5
+    dist_m = faz_matriz_distancias(iris_df)
+    primeiro_centroid = dist_m.sum(axis=1).idxmin()
+    centroids_dict = {}
+    centroids_dict[primeiro_centroid] = 0
+    dist_m.drop(primeiro_centroid, inplace=True)
+    for iteracao in range(1, k):
+        centroid_candidates_points = np.array([])
+        centroid_candidates_idx = np.array([])
+        total_sum = 0
+        for idx, _ in dist_m.iterrows():
+            x = dist_m.apply(cij_calc, axis=1, args=(centroids_dict, idx))
+            suma = x.sum()
+            total_sum += suma
+            centroid_candidates_points = np.append(centroid_candidates_points, suma)
+            centroid_candidates_idx = np.append(centroid_candidates_idx, idx)
+            print(f"MEU IDX eh {idx}")
+            #print(f"To na iteração {iteracao, idx}")
+        centroid_candidates_points = centroid_candidates_points/total_sum
+        #print(centroid_candidates_idx)
+        novo_centroid = np.random.choice(centroid_candidates_idx, p=centroid_candidates_points)
+        centroids_dict[novo_centroid] = iteracao
+        print(f"novo_centroid é {novo_centroid}")
+        dist_m.drop(novo_centroid, inplace=True)
+        print(len(dist_m))
+    points_centroids = dist_m.loc[:, centroids_dict.keys()].idxmin(axis=1)
+    points_centroids = points_centroids.apply(lambda x: centroids_dict[x])
+    points_centroids = points_centroids.append(pd.Series(centroids_dict.values(), index=centroids_dict.keys()))
+    iris_df["C-grupo"] = points_centroids
+    threedeeplt = plt.figure().gca(projection="3d")
+    ax = threedeeplt.scatter(
+        iris_df["sepal length (cm)"],
+        iris_df["sepal width (cm)"],
+        iris_df["petal length (cm)"],
+        c=iris_df["C-grupo"],
+    )
+    cb = plt.colorbar(ax)
+    plt.show()
+
     breakpoint()
-    print(estado[pior_ponto])
