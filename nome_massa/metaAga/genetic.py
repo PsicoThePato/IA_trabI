@@ -1,9 +1,11 @@
-import numpy as np
 from typing import List
+from time import time
+
+import numpy as np
 import pandas as pd
 from sklearn.datasets import load_iris
 
-import generalFuncs
+from . import generalFuncs
 
 
 def sexo(estados, populacao, cross_ratio, sse_teste):
@@ -41,7 +43,7 @@ def pega_nova_geracao(
         if(np.random.rand() < mutation_ratio):
             mutated_linha = np.random.choice(len(novo_estado_maeD))
             novo_estado_maeD.loc[[mutated_linha], ['C-grupo']] = np.random.choice(k)
-                
+          
         nova_geracao.append(novo_estado_paiD.copy())
         nova_geracao.append(novo_estado_maeD.copy())
 
@@ -65,34 +67,41 @@ def pega_nova_geracao(
 # novo_estado_paiD.loc[m_lines, "C-grupo"] = new_groups
 
 
-def run_ag(populacao, iris_df, k, cross_ratio, m):
+def run_ag(iris_df, k, populacao, cross_ratio, m):
     estados = []
     sse_list = np.array([])
     sse_total = 0
     for _ in range(populacao):
+        #
         state = generalFuncs.random_state(iris_df, k)
         estados.append(state.copy())
         sse_total, sse_list = generalFuncs.append_sse(
             sse_total, state, sse_list
             )
 
-    print(sse_list)
     sse_list = (1 - sse_list/sse_total)/(populacao - 1)
-    print(sse_list)
+
+    nova_gen = estados.copy()
+    inicio = time()
     for _ in range(20):
+        if (time() - inicio >= 1):
+            return nova_gen[sse_list.argmin()].copy()
         nova_gen, sse_total, sse_list = pega_nova_geracao(
             populacao, sse_total, sse_list,
-            cross_ratio, k, estados, m
+            cross_ratio, k, nova_gen, m
             )
-        print(f"Mais fittado: {sse_list.min()}")
+        #print(f"Mais fittado: {sse_list.min()}")
         sse_list = (1 - sse_list/sse_total)/(populacao - 1)
+
+    return nova_gen[sse_list.argmin()].copy()
 
 
 if __name__ == "__main__":
     populacao = 10
     k = 10
-    cross_ratio = 0.8
+    cross_ratio = 0.5
     m = 0.1
     iris = load_iris()
     iris_df = (pd.DataFrame(data=iris.data, columns=iris.feature_names))
-    run_ag(populacao, iris_df, k, cross_ratio, m)
+    melhor = run_ag(iris_df, k, populacao, cross_ratio, m)
+    print(melhor)
