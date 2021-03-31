@@ -3,21 +3,23 @@ import matplotlib.pyplot as plt
 import numpy as np
 from numba import jit
 
-from . import generalFuncs
-
+#from . import generalFuncs
+import generalFuncs
 
 #@jit(nopython=True)
 def cij_calc(linha, centroid_dict, wi):
-    dj = linha.loc[centroid_dict.keys()].min()
-    cij = linha.iloc[wi]
+    #breakpoint()
+    dj = linha[[*centroid_dict.keys()]].min()
+    cij = linha[wi]
     return max(dj - cij, 0)
 
 
 #@jit(nopython=True)
 def kaufman_centroid(linha, centroids_dict, dist_m):
-    x = dist_m.apply(cij_calc, axis=1, args=(centroids_dict, linha.name))
+    #breakpoint()
+    x = np.apply_along_axis(cij_calc, 1, dist_m[:, :-1], centroids_dict, int(linha[-1]))
     suma = x.sum()
-    return (suma, linha.name)
+    return (suma, linha[-1])
 
 
 #@jit(nopython=True)
@@ -35,20 +37,31 @@ def local_search(estado, k):
 #@jit(nopython=True)
 def initial_greedy_state(iris_df, k):
     dist_m = generalFuncs.faz_matriz_distancias(iris_df)
+    #breakpoint()
     primeiro_centroid = dist_m.sum(axis=1).idxmin()
     centroids_dict = {}
     centroids_dict[primeiro_centroid] = 0
     dist_m.drop(primeiro_centroid, inplace=True)
+    dist_m = dist_m.to_numpy()
+    index_points = np.array(range(len(dist_m) + 1))
+
+    dist_m = np.append(dist_m, index_points.reshape(1, 150), 0)
+    dist_m = np.append(dist_m, index_points.reshape(150, 1), 1)
+
     for iteracao in range(1, k):
-        result = dist_m.apply(kaufman_centroid, args=(centroids_dict, dist_m))
-        novo_centroid = np.random.choice(result.loc[1, :], p=result.loc[0, :]/result.loc[0,:].sum())
+        result = np.apply_along_axis(kaufman_centroid, 1, dist_m[0:-1], centroids_dict, dist_m)
+        novo_centroid = int(np.random.choice(result[:, 1], p=result[:, 0]/result[:, 0].sum()))
         centroids_dict[novo_centroid] = iteracao
-        dist_m.drop(novo_centroid, inplace=True)
+        dist_m = np.delete(dist_m, novo_centroid, 0)
         #print(iteracao)
-    points_centroids = dist_m.loc[:, centroids_dict.keys()].idxmin(axis=1)
-    points_centroids = points_centroids.apply(lambda x: centroids_dict[x])
-    points_centroids = points_centroids.append(pd.Series(centroids_dict.values(), index=centroids_dict.keys()))
+    #points_centroids = dist_m.loc[:, centroids_dict.keys()].idxmin(axis=1)
+    points_centroids = np.argmin(dist_m[:-1, [*centroids_dict.keys()]], axis=1)
+    #points_centroids = points_centroids.apply(lambda x: centroids_dict[x])
+    points_centroids = np.insert(points_centroids, [*centroids_dict.keys()], [*centroids_dict.values()])
+
+    #points_centroids = points_centroids.append(pd.Series(centroids_dict.values(), index=centroids_dict.keys()))
     iris_df["C-grupo"] = points_centroids
+    breakpoint()
     return iris_df
 
 
