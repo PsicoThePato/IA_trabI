@@ -3,24 +3,24 @@ import matplotlib.pyplot as plt
 import numpy as np
 from numba import jit
 
-import generalFuncs
+from . import generalFuncs
 
 
-@jit(nopython=True)
+#@jit(nopython=True)
 def cij_calc(linha, centroid_dict, wi):
     dj = linha.loc[centroid_dict.keys()].min()
     cij = linha.iloc[wi]
     return max(dj - cij, 0)
 
 
-@jit(nopython=True)
+#@jit(nopython=True)
 def kaufman_centroid(linha, centroids_dict, dist_m):
     x = dist_m.apply(cij_calc, axis=1, args=(centroids_dict, linha.name))
     suma = x.sum()
     return (suma, linha.name)
 
 
-@jit(nopython=True)
+#@jit(nopython=True)
 def local_search(estado, k):
     comp_estado = estado.copy()
     pior_grp = generalFuncs.pior_grupo([*comp_estado.copy().groupby('C-grupo')])
@@ -32,7 +32,7 @@ def local_search(estado, k):
     return estado
 
 
-@jit(nopython=True)
+#@jit(nopython=True)
 def initial_greedy_state(iris_df, k):
     dist_m = generalFuncs.faz_matriz_distancias(iris_df)
     primeiro_centroid = dist_m.sum(axis=1).idxmin()
@@ -52,19 +52,22 @@ def initial_greedy_state(iris_df, k):
     return iris_df
 
 
+def run_grasp(dataset, k, nIter):
+    iris_df = initial_greedy_state(dataset, k)
+    for _ in range(nIter):
+        #if(_ == 0):
+            #print(generalFuncs.sse_estado([*iris_df.copy().groupby('C-grupo')]))
+        iris_df = local_search(iris_df, k)
+    return iris_df
+
+
 if __name__ == "__main__":
     from sklearn.datasets import load_iris
     iris = load_iris()
     iris_df = (pd.DataFrame(data=iris.data, columns=iris.feature_names))
-    breakpoint()
     k = 5
-
-    for _ in range(10):
-        iris_df = initial_greedy_state(iris_df, k)
-        if(_ == 0):
-            print(generalFuncs.sse_estado([*iris_df.copy().groupby('C-grupo')]))
-        iris_df = local_search(iris_df, k)
-    print(generalFuncs.sse_estado([*iris_df.copy().groupby('C-grupo')]))
+    numIter = 10
+    run_grasp(iris_df, k, numIter)
     threedeeplt = plt.figure().gca(projection="3d")
     ax = threedeeplt.scatter(
         iris_df["sepal length (cm)"],
